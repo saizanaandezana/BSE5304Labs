@@ -16,9 +16,9 @@ mypdfdir=paste0(mygitdir,"/pdfs")
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
-                 rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
+                 raster,shapefiles,rgdal,elevatr,terra,progress,lubridate, sf, stars)
 
- datadir=paste0(myhomedir,"/data")
+datadir=paste0(myhomedir,"/data")
 # dir.create(datadir,recursive = T)
 # srcdir=paste0(myhomedir,"/src")
 # dir.create(srcdir,recursive = T)
@@ -27,7 +27,7 @@ pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
 # setwd(srcdir)
 # system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); 
 # install.packages(c("ecohydrology/pkg/EcoHydRology/"),repos = NULL)
-# pacman::p_load(EcoHydRology)
+pacman::p_load(EcoHydRology)
 
 setwd(datadir)
 
@@ -145,11 +145,11 @@ writeRaster(mydem,filename = "mydem.tif",overwrite=T)
 # zoomext=rbind(zoomext,zoomext-res(mydem)*100)
 # zoomext=SpatialPoints(zoomext,proj4string = crs_utm)  
 # zoom(mydem,ext=zoomext)
-# zoomext2=myflowgage$gagepoint_utm@coords
-# zoomext2=rbind(zoomext2,zoomext2+res(mydem)*10)
-# zoomext2=rbind(zoomext2,zoomext2-res(mydem)*10)
-# zoomext2=SpatialPoints(zoomext2,proj4string = crs_utm)  
-# zoom(mydem,ext=zoomext2)
+zoomext2=myflowgage$gagepoint_utm@coords
+zoomext2=rbind(zoomext2,zoomext2+res(mydem)*10)
+zoomext2=rbind(zoomext2,zoomext2-res(mydem)*10)
+zoomext2=SpatialPoints(zoomext2,proj4string = crs_utm)
+zoom(mydem,ext=zoomext2)
 # plot(bboxpts,add=T)
 # plot(pourpoint,add=T,col="red")
 
@@ -178,7 +178,7 @@ plot(z)
 # Pitremove
 system("mpiexec -n 2 pitremove -z mydem.tif -fel mydemfel.tif")
 fel=raster("mydemfel.tif")
-plot(fel)
+plot(z-fel)
 
 
 # D2 flow directions
@@ -220,7 +220,7 @@ system("mpiexec -n 2 threshold -ssa mydemad8.tif -src mydemsrc.tif -thresh 100")
 src=raster("mydemsrc.tif")
 plot(src)
 plot(outlet, add=T)
-zoom(src)
+zoom(src, ext = zoomext2)
 
 # a quick R function to write a shapefile
 makeshape.r=function(sname="shape",n=1)
@@ -230,7 +230,7 @@ makeshape.r=function(sname="shape",n=1)
   
   #Point
   dd <- data.frame(Id=1:n,X=xy$x,Y=xy$y)
-  ddTable <- data.frame(Id=c(1),Name=paste("Outlet",1:n,sep=""))
+  ddTable <- data.frame(Id=c(1),Name=paste("outlet",1:n,sep=""))
   ddShapefile <- convert.to.shapefile(dd, ddTable, "Id", 1)
   write.shapefile(ddShapefile, sname, arcgis=T)
 }
@@ -238,23 +238,22 @@ makeshape.r=function(sname="shape",n=1)
 makeshape.r("approxoutlets")
 
 # Move Outlets
-system("mpiexec -n 2 moveoutletstostreams -p mydemp.tif -src mydemsrc.tif -o approxoutlets.shp -om outlet.shp")
+system("mpiexec -n 2 moveoutletstostrm -p mydemp.tif -src mydemsrc.tif -o approxoutlets.shp -om outlet.shp")
 approxpt = readOGR("approxoutlets.shp")
-outpt=read.shp("outlet.shp")
+outpt=readOGR("outlet.shp")
 #approxpt=read.shp("ApproxOutlets.shp")
 
-plot(src)
-points(outpt$shp[2],outpt$shp[3],pch=19,col=2)
-points(approxpt$shp[2],approxpt$shp[3],pch=19,col=4)
-
-zoom(src)
-
+plot(src, ext = zoomext2)
+plot(approxpt, add =T)
+plot(outpt, add = T, col = "red")
+# points(outpt$shp[2],outpt$shp[3],pch=19,col=2)
+# points(approxpt$shp[2],approxpt$shp[3],pch=19,col=4)
 
 # Contributing area upstream of outlet
-system("mpiexec -n 8 Aread8 -p mydemp.tif -o Outlet.shp -ad8 mydemssa.tif")
+system("mpiexec -n 8 aread8 -p mydemp.tif -o outlet.shp -ad8 mydemssa.tif")
 ssa=raster("mydemssa.tif")
 plot(ssa) 
-
+zoom(ssa)
 
 # Threshold
 system("mpiexec -n 8 threshold -ssa mydemssa.tif -src mydemsrc1.tif -thresh 2000")
@@ -263,16 +262,29 @@ plot(src1)
 zoom(src1)
 
 # Stream Reach and Watershed
-system("mpiexec -n 8 Streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc1.tif -o outlet.shp -ord mydemord.tif -tree mydemtree.txt -coord mydemcoord.txt -net mydemnet.shp -w mydemw.tif")
+system("mpiexec -n 8 streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc1.tif -o outlet.shp -ord mydemord.tif -tree mydemtree.txt -coord mydemcoord.txt -net mydemnet.shp -w mydemw.tif")
 plot(raster("mydemord.tif"))
 zoom(raster("mydemord.tif"))
 plot(raster("mydemw.tif"))
+zoom(raster("mydemw.tif"))
 
+ws = raster("mydemw.tif")
+wsshape = st_as_stars(ws) %>% st_as_sf(merge=T) %>% st_union()
+plot(wsshape)
+st_area(wsshape)/1000000 # unit is in km2
 
+setwd(datadir)
+setwd(mypdfdir)
 
+filename=paste0(mypdfdir,basestr,"mywatershed.pdf")
+pdf(filename) 
 
+ylim=c(4125500,4125500+8000)
+xlim=c(588500,588500+6000)
 
+plot(ws, xlim=xlim, ylim=ylim)
+plot(wsshape, add = T)
 
-
+dev.off()
 
 
