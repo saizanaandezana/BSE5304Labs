@@ -30,8 +30,8 @@ mypdfdir=paste0(mygitdir,"/pdfs",LabNo)
 dir.create(mypdfdir)
 # 
 setwd(mygitdir)
-system("git config --global user.email 'drfuka@vt.edu' ") 
-system("git config --global user.name 'Daniel Fuka' ")
+system("git config --global user.email 'binyam@vt.edu' ") 
+system("git config --global user.name 'saizanaandezana' ")
 system("git config pull.rebase false")
 #
 # This week, we discovered some "features" that make removing and 
@@ -244,7 +244,7 @@ ssa=raster("mydemssa.tif")
 plot(ssa) 
 
 # Threshold
-system("mpiexec -n 2 threshold -ssa mydemssa.tif -src mydemsrc1.tif -thresh 2000")
+
 syscmd=paste0("mpiexec -n 2 threshold -ssa mydemssa.tif -src mydemsrc1.tif -thresh ",subthreshold)
 system(syscmd)
 src1=raster("mydemsrc1.tif")
@@ -275,7 +275,7 @@ mydemw=rast("mydemw.tif")
 mydemw_poly=as.polygons(mydemw,na.rm=T)
 plot(mydemw_poly,add=T,col=rainbow(6))
 
-writeVector(mydemw_poly,dsn=".",layer="mydemw",driver="ESRI Shapefile", overwrite_layer=TRUE)
+#writeVector(mydemw_poly,dsn=".",layer="mydemw",driver="ESRI Shapefile", overwrite_layer=TRUE)
 writeVector(mydemw_poly, filename="mydemw.shp", filetype="ESRI Shapefile", layer="mydemw", insert=FALSE,
             overwrite=TRUE)
 
@@ -371,83 +371,21 @@ plot(TIC_terra)
 # 
 
 TMWB=BasinData
-#
+ #
 # Our model will
 # 1) Calculate PET for the basin via Function
 # 2) Calculate the Snow Accumulation and Melt via Function
 # 3) Run TMWB via Function 
 #
 #
-# First functions from last week we already have, Wetting, Drying, 
-# and Wetting above capacity 
-# 
-# soil wetting function
-soilwetting<-function(AWprev,dP_func,AWC_func){
-  AW_func<-AWprev+dP_func
-  excess_func<-0.0
-  c(AW_func,excess_func)
-} 
-# soil drying function
-soildrying<-function(AWprev,dP_func,AWC_func){
-  AW_func=AWprev*exp(dP_func/AWC_func)
-  excess_func<-0.0
-  c(AW_func,excess_func)
-}
-# soil_wetting_above_capacity function
-soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
-  AW_func<-AWC_func
-  excess_func<-AWprev+dP_func-AWC_func
-  c(AW_func,excess_func)
-}
-
-#
 # Lets make one out of our Temperature Index Snow Model
 #
+source("https://raw.githubusercontent.com/saizanaandezana/BSE5304Labs/main/R/TMWBFuncs.R")
 
-SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
-bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
-bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
-Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
-Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
-
-TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
-  WBData$AvgTemp=(WBData$MaxTemp-WBData$MinTemp)/2
-  WBData$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 * 
-    sin(2*pi/365*(julian(WBData$date,origin = as.Date("2000-01-01"))-81))
-  # Initialize SNO, Tsno as well as the first values of each
-  WBData$SNO = 0  # Snow Depth (mm)
-  WBData$Tsno = 0  # Snow Temp (C)
-  WBData$SNOmlt = 0  # Snow Melt (mm)
-  WBData$SNOfall = 0  # Snow Fall (mm)
-  attach(WBData)
-  for (t in 2:length(date)){
-    Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
-    if(AvgTemp[t] < SFTmp){
-      SNO[t]= SNO[t-1] + P[t]
-      #
-      # Eeee... I forgot to save my snowfall!
-      #
-      SNOfall=P[t]
-    }  else {
-      SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 
-      SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
-      SNO[t]= SNO[t-1] -SNOmlt[t]
-    }
-    print(t)
-  }
-  plot(date,SNO,type="l")
-  detach(WBData)
-  WBData$Tsno=Tsno
-  WBData$SNO=SNO
-  WBData$SNOmlt=SNOmlt
-  WBData$SNOmlt=SNOfall
-  rm(list=c("SNO", "SNOmlt", "Tsno"))
-  return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
-}
+source("https://raw.githubusercontent.com/saizanaandezana/BSE5304Labs/main/R/TISnow.R")
 
 
-
-SNO_df=TISnow(TMWB)
+SNO_df=TISnow(TMWB,SFTmp=2,bmlt6,bmlt12, Tmlt, Tlag)
 TMWB$SNO=SNO_df$SNO
 TMWB$SNOmlt=SNO_df$SNOmlt
 TMWB$SNOfall=SNO_df$SNOfall
@@ -455,99 +393,82 @@ TMWB$Tsno=SNO_df$Tsno
 detach(TMWB)
 #
 # Our PET Model we will borrow from EcoHydrology
-#
-?PET_fromTemp
-TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),Tmax_C = MaxTemp,Tmin_C = MinTemp,
+
+TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(TMWB$date)$yday),Tmax_C = TMWB$MaxTemp,Tmin_C = TMWB$MinTemp,
                       lat_radians = myflowgage$declat*pi/180) * 1000
-plot(date,TMWB$PET)
+plot(TMWB$date,TMWB$PET)
 
 
 # Our TMWB Model
 
-attach(TMWB)
-detach(TMWB)
-
-
-TMWB$ET = TMWB$PET # in mm/day
-TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
-TMWB$dP = TMWB$P-TMWB$ET -TMWB$SNO + TMWB$SNOmlt 
-
-attach(TMWB)# Remember to detach or it gets ugly
-plot(date,Qmm,type = "l",col="black")
-lines(date,P,type = "l",col="red")
-lines(date,Qmm,type = "l",col="black") # We repeat to have Qmm on top of P
-lines(date,ET,type = "l",col="blue")
-legend("topright", c("P", "Qmm", "ET"), col = c("red", "black", "blue"),
-       lty = 1:2, cex = 0.8)
-detach(TMWB) # IMPORTANT TO DETACH
-
-
-TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
-
-
-TMWB$AW=NA  #Assigns all values in column with “NA” (Not available)
-TMWB$AW[1]=250
-TMWB$Excess=NA
-TMWB$Excess[1]=0
-head(TMWB)
-
-# Here we go looping through our functions….
-
-attach(TMWB)
-for (t in 2:length(date)){
-  if (dP[t]< 0) {  
-    values<-soildrying(AW[t-1],dP[t],AWC[t])
-  } else if (AW[t-1]+dP[t]>AWC[t]) {
-    values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
-  } else {
-    values<-soilwetting (AW[t-1],dP[t],AWC[t])
-  }
-  AW[t]<-values[1]
-  Excess[t]<-values[2]
-}
-
-detach(TMWB)
-TMWB$AW <-AW
-TMWB$Excess<-Excess
-rm(list=c("AW","Excess"))
-
-# Calculate Watershed Storage and River Discharge: 
-TMWB$Qpred=NA
-TMWB$Qpred[1]=0
-TMWB$S=NA
-TMWB$S[1]=0
-
-attach(TMWB)
-fcres=.3   # reservoir coefficient
-for (t in 2:length(date)){
-  S[t]=S[t-1]+Excess[t]     
-  Qpred[t]=fcres*S[t]
-  S[t]=S[t]-Qpred[t]
-}
-detach(TMWB) # IMPORTANT TO DETACH
-TMWB$S=S
-TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
-rm(list=c("S","Qpred"))
-View(TMWB)
-dev.off()
-plot(TMWB$date,TMWB$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
-lines(TMWB$date,TMWB$Qpred,col="blue",type="l", 
-      xlab = "", ylab = "")
-legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
-       lty = 1:2, cex = 0.8)
+TMWBModel= function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000){
+  
+# TMWBdf$dP = TMWBdf$P-TMWBdf$ET -TMWBdf$SNO + TMWBdf$SNOmlt 
+# TMWBdf$ET = TMWBdf$PET # in mm/day
+# TMWBdf$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
+# TMWBdf$AW=NA  #Assigns all values in column with “NA” (Not available)
+# TMWBdf$AW[1]=250
+# TMWBdf$Excess=NA
+# TMWBdf$Excess[1]=0
+# head(TMWBdf)
+# 
+# # Here we go looping through our functions….
+# 
+# attach(TMWBdf)
+# for (t in 2:length(date)){
+#   if (dP[t]< 0) {  
+#     values<-soildrying(AW[t-1],dP[t],AWC[t])
+#   } else if (AW[t-1]+dP[t]>AWC[t]) {
+#     values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
+#   } else {
+#     values<-soilwetting (AW[t-1],dP[t],AWC[t])
+#   }
+#   AW[t]<-values[1]
+#   Excess[t]<-values[2]
+# }
+# 
+# detach(TMWBdf)
+# TMWBdf$AW <-AW
+# TMWBdf$Excess<-Excess
+# rm(list=c("AW","Excess"))
+# 
+# # Calculate Watershed Storage and River Discharge: 
+# TMWBdf$Qpred=NA
+# TMWBdf$Qpred[1]=0
+# TMWBdf$S=NA
+# TMWBdf$S[1]=0
+# 
+# attach(TMWBdf)
+# fcres=.3   # reservoir coefficient
+# for (t in 2:length(date)){
+#   S[t]=S[t-1]+Excess[t]     
+#   Qpred[t]=fcres*S[t]
+#   S[t]=S[t]-Qpred[t]
+# }
+# detach(TMWBdf) # IMPORTANT TO DETACH
+# TMWBdf$S=S
+# TMWBdf$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+# rm(list=c("S","Qpred"))
+# View(TMWBdf)
+# dev.off()
+# plot(TMWBdf$date,TMWBdf$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
+# lines(TMWBdf$date,TMWBdf$Qpred,col="blue",type="l", 
+#       xlab = "", ylab = "")
+# legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
+#        lty = 1:2, cex = 0.8)
 
 myflowgage$FldCap=.45
 myflowgage$WiltPt=.15
 myflowgage$Z=1000
-TMWB$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
-TMWB$dP = 0 # Initializing Net Precipitation
-TMWB$ET = 0 # Initializing ET
-TMWB$AW = 0 # Initializing AW
-TMWB$Excess = 0 # Initializing Excess
+TMWBdf$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
+TMWBdf$dP = 0 # Initializing Net Precipitation
+TMWBdf$ET = 0 # Initializing ET
+TMWBdf$AW = 0 # Initializing AW
+TMWBdf$Excess = 0 # Initializing Excess
 
 
 # Loop to calculate AW and Excess
-attach(TMWB)
+attach(TMWBdf)
 for (t in 2:length(AW)){
   # This is where Net Precipitation is now calculated
   # Do you remember what Net Precip is? Refer to week 2 notes
@@ -567,30 +488,43 @@ for (t in 2:length(AW)){
   Excess[t]<-values[2]
   print(t)
 }
-TMWB$AW=AW
-TMWB$Excess=Excess
-TMWB$dP=dP
-TMWB$ET=ET
+TMWBdf$AW=AW
+TMWBdf$Excess=Excess
+TMWBdf$dP=dP
+TMWBdf$ET=ET
 rm(list=c("AW","dP","ET", "Excess"))
-detach(TMWB) # IMPORTANT TO DETACH
+detach(TMWBdf) # IMPORTANT TO DETACH
 
 # Calculate Watershed Storage and River Discharge, S and Qpred, playing with the reservoir coefficient to try to get Qpred to best match Qmm
 
-TMWB$Qpred=NA
-TMWB$Qpred[1]=0
-TMWB$S=NA
-TMWB$S[1]=0
-attach(TMWB)
+TMWBdf$Qpred=NA
+TMWBdf$Qpred[1]=0
+TMWBdf$S=NA
+TMWBdf$S[1]=0
+attach(TMWBdf)
 fcres=.3
 for (t in 2:length(date)){
   S[t]=S[t-1]+Excess[t]     
   Qpred[t]=fcres*S[t]
   S[t]=S[t]-Qpred[t]
 }
-TMWB$S=S
-TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
-detach(TMWB) # IMPORTANT TO DETACH
+TMWBdf$S=S
+TMWBdf$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+detach(TMWBdf) # IMPORTANT TO DETACH
 rm(list=c("Qpred","S"))
+return(TMWBdf)
+}
+
+
+junkmodel = TMWBModel(TMWB)
+
+
+
+
+
+
+
+
 
 #Make a plot that has Qmm, P,and Qpred over time
 plot(TMWB$date,P,col="black")
