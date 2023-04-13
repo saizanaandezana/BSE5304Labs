@@ -1,4 +1,9 @@
 # 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 # Since everything depends on the libraries you install
 # it is worthwhile loading them at the beginning
 #
@@ -30,14 +35,24 @@ mypdfdir=paste0(mygitdir,"/pdfs",LabNo)
 dir.create(mypdfdir)
 # 
 setwd(mygitdir)
+<<<<<<< HEAD
 system("git config --global user.email 'binyam@vt.edu' ") 
 system("git config --global user.name 'saizanaandezana' ")
+=======
+system("git config --global user.email 'drfuka@vt.edu' ") 
+system("git config --global user.name 'Daniel Fuka' ")
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 system("git config pull.rebase false")
 #
 # This was already done before, and doesn't need to be repeated unless there
 # is an update to R or the EcoHydRology Package... but 
 #
 setwd(srcdir)
+<<<<<<< HEAD
+=======
+detach("package:EcoHydRology", unload = TRUE)
+remove.packages("EcoHydRology", lib="~/R/x86_64-pc-linux-gnu-library/4.2")
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); 
 install.packages(c("ecohydrology/pkg/EcoHydRology/"),repos = NULL)
 pacman::p_load(EcoHydRology)
@@ -45,6 +60,10 @@ pacman::p_load(EcoHydRology)
 setwd(datadir)
 
 myflowgage_id="0205551460"
+<<<<<<< HEAD
+=======
+myflowgage_id="14216500"
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                            end_date = "2019-01-01")
 #
@@ -60,10 +79,18 @@ myflowgage$flowdata$Qmm = myflowgage$flowdata$flow/myflowgage$area/10^3
 # for any location in the world way easier than traditional download and
 # parsing methods most old people use.
 #
+<<<<<<< HEAD
 WXData=FillMissWX(declat=myflowgage$declat, declon=myflowgage$declon,
                     StnRadius=30,minstns=10,date_min="2010-01-01",
                     date_max="2023-02-01",targElev=1,
                     method = "IDEW",alfa=2)
+=======
+source("https://raw.githubusercontent.com/Rojakaveh/FillMissWX/main/FillMissWX.R")
+WXData=FillMissWX(declat=myflowgage$declat, declon=myflowgage$declon,
+                    StnRadius=30,minstns=10,date_min="2010-01-01",
+                    date_max="2023-02-01",targElev=myflowgage$elev,
+                    method = "IDW",alfa=2)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 
 BasinData=merge(WXData,myflowgage$flowdata,by.x="date",by.y="mdate")
 #
@@ -104,7 +131,11 @@ bboxpts
 bboxpts=SpatialPoints(bboxpts,proj4string = crs_utm)
 # From Lab04, get your DEM
 mydem=get_aws_terrain(locations=bboxpts@coords, 
+<<<<<<< HEAD
                         z = 12, prj = proj4_utm,src ="aws",expand=1)
+=======
+               z = 10, prj = proj4_utm,src ="aws",expand=1)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 res(mydem)
 plot(mydem)
 plot(bboxpts,add=T)
@@ -200,12 +231,29 @@ sca=raster("mydemsca.tif")
 plot(log(sca))
 zoom(log(sca),ext=zoomext2)
 
+<<<<<<< HEAD
 # Threshold
 system("mpiexec -n 2 threshold -ssa mydemad8.tif -src mydemsrc.tif -thresh 100")
 src=raster("mydemsrc.tif")
 plot(src)
 zoom(src,ext=zoomext2)
 plot(pourpoint, add=T)
+=======
+targetbasins=3  # Lets figure out some number of sub basins we want
+                # to break this into
+res(mydem)      # Cell Resolution in meters
+myflowgage$area # Area in km^2
+myflowgage$area * 10^3 * 10^3 / res(mydem)[1]^2 / targetbasins
+subthreshold=myflowgage$area * 10^3 * 10^3 / res(mydem)[1]^2 / targetbasins
+subthreshold=as.integer(subthreshold)
+# Threshold
+syscmd=paste0("mpiexec -n 2 threshold -ssa mydemad8.tif -src mydemsrc.tif -thresh ",subthreshold)
+system(syscmd)
+src=raster("mydemsrc.tif")
+plot(src)
+zoom(src,ext=zoomext2)
+plot(pourpoint,add=T)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 
 outlet=SpatialPointsDataFrame(myflowgage$gagepoint_utm,
                                 data.frame(Id=c(1),outlet=paste("outlet",1,sep="")))
@@ -230,15 +278,30 @@ plot(ssa)
 
 # Threshold
 system("mpiexec -n 2 threshold -ssa mydemssa.tif -src mydemsrc1.tif -thresh 2000")
+<<<<<<< HEAD
 src1=raster("mydemsrc1.tif")
 plot(src1)
 zoom(src1,ext=zoomext2)
+=======
+syscmd=paste0("mpiexec -n 2 threshold -ssa mydemssa.tif -src mydemsrc1.tif -thresh ",subthreshold)
+system(syscmd)
+src1=raster("mydemsrc1.tif")
+plot(src1)
+zoom(src1,ext=zoomext)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 
 # Stream Reach and Watershed
 system("mpiexec -n 2 streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc1.tif -o outlet.shp -ord mydemord.tif -tree mydemtree.txt -coord mydemcoord.txt -net mydemnet.shp -w mydemw.tif")
 plot(raster("mydemord.tif"))
 zoom(raster("mydemord.tif"),ext=zoomext2)
+<<<<<<< HEAD
 plot(raster("mydemw.tif"))
+=======
+mydemw=raster("mydemw.tif")
+zoom(mydemw,ext=zoomext)
+summary(mydemw)
+plot(mydemw)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 
 # Trimming, Cropping, and Masking to make life prettier and easier
 mydemw=raster("mydemw.tif")
@@ -251,6 +314,7 @@ plot(mybasindem)
 # Make a poly with raster library (slow)
 # or from thee command line gdal (fast)
 # gdal_polygonize.py -8 mydemw.tif mydemw_poly_gdal.shp
+<<<<<<< HEAD
 mydemw_poly=rasterToPolygons(mydemw,dissolve = T,na.rm = T)
 plot(mydemw_poly,add=T,border="red")
 plot(readOGR("mydemnet.shp"), add=T)
@@ -283,6 +347,36 @@ unique(mysoil$MUKEY)
 ?SDA_query
 mysoil$mukey=mysoil$MUKEY  # or rename the column
 mukey_statement = format_SQL_in_statement(unique(mysoil$mukey))
+=======
+mydemw=rast("mydemw.tif")
+mydemw_poly=as.polygons(mydemw,na.rm=T)
+plot(mydemw_poly,add=T,col=rainbow(6))
+
+writeVector(mydemw_poly,dsn=".",layer="mydemw",driver="ESRI Shapefile", overwrite_layer=TRUE)
+writeVector(mydemw_poly, filename="mydemw.shp", filetype="ESRI Shapefile", layer="mydemw", insert=FALSE,
+            overwrite=TRUE)
+
+
+ssurgo.geom <- SDA_spatialQuery(
+  mydemw_poly,
+  what = 'mupolygon',
+  db = 'SSURGO',
+  geomIntersection = TRUE
+)
+
+ssurgo.geom_utm=project(ssurgo.geom,crs_utm)
+plot(ssurgo.geom_utm,col=rainbow(length(ssurgo.geom_utm)))
+plot(mydemw_poly,add=T)
+ssurgo.geom_utm_crop=crop(ssurgo.geom_utm,mydemw_poly)
+
+plot(ssurgo.geom_utm_crop,col=rainbow(length(ssurgo.geom_utm)))
+plot(mydemw_poly,add=T)
+#
+# Get a list of the Map Units to use in accessing the soil data
+#
+unique(ssurgo.geom_utm_crop$mukey)
+mukey_statement = format_SQL_in_statement(unique(ssurgo.geom_utm_crop$mukey))
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 print(mukey_statement)
 q_mu2co = paste("SELECT mukey,cokey FROM component WHERE mukey IN ", mukey_statement, sep="")
 print(q_mu2co)
@@ -303,16 +397,104 @@ summary(mu2ch)
 mu2chmax=aggregate(mu2ch,list(mu2ch$mukey),max)
 summary(mu2chmax)   	# What should we do with NAs?
 # What do we have here vs our model for AWC?
+<<<<<<< HEAD
 
 TMWB=BasinData
 
 #We will look for which portions of the model can be vectorized, for example, we will need the average temperature Tave=(Tmin+Tmax)/2, and the melt factor which is dependent on the calibration coefficients and day of year.  Remember, wherever there are ??? (in the code) you need to fill in the code.
 
 SFTmp = 1  # referred to as SFTMP in SWAT input (Table 1)
+=======
+soilmap=merge(ssurgo.geom_utm_crop,mu2chmax,all=T)
+
+par(mfrow=c(2,2))
+plot(soilmap,y="ksat_r")
+plot(soilmap,y="awc_r")
+plot(soilmap,y="hzdepb_r")
+plot(mydemw_poly,main="Subbasins",col=rainbow(length(mydemw_poly)))
+
+soilmap$ksat_r[is.na(soilmap$ksat_r)]=mean(soilmap$ksat_r,na.rm=T)
+soilmap$awc_r[is.na(soilmap$awc_r)]=mean(soilmap$awc_r,na.rm=T)
+soilmap$hzdepb_r[is.na(soilmap$hzdepb_r)]=mean(soilmap$hzdepb_r,na.rm=T)
+
+par(mfrow=c(1,1))
+# Lab 04 TI 
+slp=raster("mydemslp.tif")
+plot(slp,ext=zoomext)
+sca=raster("mydemsca.tif")
+plot(log(sca),e=zoomext)
+TI = log( (sca+1)/(slp+0.00001) )
+plot(TI)
+zoom(log(TI),e=zoomext)
+#
+# To make things easier, while adding some confusion
+# we will convert raster objects to "terra" supported SpatRasters
+# and back again to use features that are unique to each
+#
+TI_terra=rast(TI)
+TI_terra=crop(mask(TI_terra,mydemw_poly),mydemw_poly)
+#
+# Why would we want to mask the TI to the watershed
+# boundaries before we build TI Classes?
+# 
+TI=raster(TI_terra)
+pacman::p_load(classInt)
+nTIclass=5 #number of TI classes, currently equal area, can adjust method various ways e.g., classIntervals(v, n = nTIclass, style = "jenks")
+v=values(TI)
+v=v[!is.na(v)]
+brks.qt = classIntervals(v, n = nTIclass, style = "quantile")$brks #length nTIclass+1 of just the numeric breakpoints
+
+TIC = cut(TI, breaks=brks.qt, include.lowest = T, right=T)
+plot(TIC)
+TIC_terra=rast(TIC)
+plot(TIC_terra)
+
+
+# Lab 04 Calibration
+# Building more complex functions
+# 
+
+TMWB=BasinData
+#
+# Our model will
+# 1) Calculate PET for the basin via Function
+# 2) Calculate the Snow Accumulation and Melt via Function
+# 3) Run TMWB via Function 
+#
+#
+# First functions from last week we already have, Wetting, Drying, 
+# and Wetting above capacity 
+# 
+# soil wetting function
+soilwetting<-function(AWprev,dP_func,AWC_func){
+  AW_func<-AWprev+dP_func
+  excess_func<-0.0
+  c(AW_func,excess_func)
+} 
+# soil drying function
+soildrying<-function(AWprev,dP_func,AWC_func){
+  AW_func=AWprev*exp(dP_func/AWC_func)
+  excess_func<-0.0
+  c(AW_func,excess_func)
+}
+# soil_wetting_above_capacity function
+soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
+  AW_func<-AWC_func
+  excess_func<-AWprev+dP_func-AWC_func
+  c(AW_func,excess_func)
+}
+
+#
+# Lets make one out of our Temperature Index Snow Model
+#
+
+SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
 bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
 Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
 Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
+<<<<<<< HEAD
 TMWB$AvgTemp= (TMWB$MaxTemp - TMWB$MinTemp)/2
 TMWB$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 *  sin(2*pi/365*(julian(TMWB$date,origin = as.Date("2000-01-01"))-81))
 # Initialize SNO, Tsno as well as the first values of each
@@ -372,6 +554,70 @@ TMWB$ET = TMWB$PET # in mm/day
 
 TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
 TMWB$dP = TMWB$P - TMWB$ET
+=======
+
+TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
+  WBData$AvgTemp=(WBData$MaxTemp-WBData$MinTemp)/2
+  WBData$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 * 
+            sin(2*pi/365*(julian(WBData$date,origin = as.Date("2000-01-01"))-81))
+  # Initialize SNO, Tsno as well as the first values of each
+  WBData$SNO = 0  # Snow Depth (mm)
+  WBData$Tsno = 0  # Snow Temp (C)
+  WBData$SNOmlt = 0  # Snow Melt (mm)
+  WBData$SNOfall = 0  # Snow Fall (mm)
+  attach(WBData)
+  for (t in 2:length(date)){
+    Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
+    if(AvgTemp[t] < SFTmp){
+      SNO[t]= SNO[t-1] + P[t]
+#
+# Eeee... I forgot to save my snowfall!
+#
+      SNOfall=P[t]
+    }  else {
+      SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 
+      SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
+      SNO[t]= SNO[t-1] -SNOmlt[t]
+    }
+    print(t)
+  }
+  plot(date,SNO,type="l")
+  detach(WBData)
+  WBData$Tsno=Tsno
+  WBData$SNO=SNO
+  WBData$SNOmlt=SNOmlt
+  WBData$SNOmlt=SNOfall
+  rm(list=c("SNO", "SNOmlt", "Tsno"))
+  return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
+}
+
+
+
+SNO_df=TISnow(TMWB)
+TMWB$SNO=SNO_df$SNO
+TMWB$SNOmlt=SNO_df$SNOmlt
+TMWB$SNOfall=SNO_df$SNOfall
+TMWB$Tsno=SNO_df$Tsno
+detach(TMWB)
+#
+# Our PET Model we will borrow from EcoHydrology
+#
+?PET_fromTemp
+TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),Tmax_C = MaxTemp,Tmin_C = MinTemp,
+                 lat_radians = myflowgage$declat*pi/180) * 1000
+plot(date,TMWB$PET)
+
+
+# Our TMWB Model
+
+attach(TMWB)
+detach(TMWB)
+
+
+TMWB$ET = TMWB$PET # in mm/day
+TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
+TMWB$dP = TMWB$P-TMWB$ET -TMWB$SNO + TMWB$SNOmlt 
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 
 attach(TMWB)# Remember to detach or it gets ugly
 plot(date,Qmm,type = "l",col="black")
@@ -383,6 +629,7 @@ legend("topright", c("P", "Qmm", "ET"), col = c("red", "black", "blue"),
 detach(TMWB) # IMPORTANT TO DETACH
 
 
+<<<<<<< HEAD
 soilwetting<-function(AWprev,dP_func,AWC_func){
   AW_func<-AWprev+dP_func
   excess_func<-0.0
@@ -413,6 +660,10 @@ soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
 TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
 
 #Add a column to hold the AW solution, and initialize the very first value to 250mm.
+=======
+TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
+
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 
 TMWB$AW=NA  #Assigns all values in column with “NA” (Not available)
 TMWB$AW[1]=250
@@ -433,12 +684,199 @@ for (t in 2:length(date)){
   }
   AW[t]<-values[1]
   Excess[t]<-values[2]
+<<<<<<< HEAD
   
 }
+=======
+}
+
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 detach(TMWB)
 TMWB$AW <-AW
 TMWB$Excess<-Excess
 rm(list=c("AW","Excess"))
 
+<<<<<<< HEAD
 
 # Continue working through the rest of the model down through Problem 3
+=======
+# Calculate Watershed Storage and River Discharge: 
+TMWB$Qpred=NA
+TMWB$Qpred[1]=0
+TMWB$S=NA
+TMWB$S[1]=0
+
+attach(TMWB)
+fcres=.3   # reservoir coefficient
+for (t in 2:length(date)){
+  S[t]=S[t-1]+Excess[t]     
+  Qpred[t]=fcres*S[t]
+  S[t]=S[t]-Qpred[t]
+}
+detach(TMWB) # IMPORTANT TO DETACH
+TMWB$S=S
+TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+rm(list=c("S","Qpred"))
+View(TMWB)
+dev.off()
+plot(TMWB$date,TMWB$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
+lines(TMWB$date,TMWB$Qpred,col="blue",type="l", 
+        xlab = "", ylab = "")
+legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
+         lty = 1:2, cex = 0.8)
+
+myflowgage$FldCap=.45
+myflowgage$WiltPt=.15
+myflowgage$Z=1000
+TMWB$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
+TMWB$dP = 0 # Initializing Net Precipitation
+TMWB$ET = 0 # Initializing ET
+TMWB$AW = 0 # Initializing AW
+TMWB$Excess = 0 # Initializing Excess
+
+
+# Loop to calculate AW and Excess
+attach(TMWB)
+for (t in 2:length(AW)){
+  # This is where Net Precipitation is now calculated
+  # Do you remember what Net Precip is? Refer to week 2 notes
+# Update this to reflect the ET model described above
+
+ET[t] = (AW[t-1]/AWC[t-1])*PET[t] # New Model
+dP[t] = P[t] - ET[t] + SNOmlt[t] - SNOfall[t] 
+# From here onward, everything is the same as Week2’s lab
+if (dP[t]<=0) {
+  values<-soildrying(AW[t-1],dP[t],AWC[t])
+} else if((dP[t]>0) & (AW[t-1]+dP[t])<=AWC[t]) {
+  values<-soilwetting(AW[t-1],dP[t],AWC[t])
+} else {
+  values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
+}
+AW[t]<-values[1]
+Excess[t]<-values[2]
+print(t)
+}
+TMWB$AW=AW
+TMWB$Excess=Excess
+TMWB$dP=dP
+TMWB$ET=ET
+rm(list=c("AW","dP","ET", "Excess"))
+detach(TMWB) # IMPORTANT TO DETACH
+
+# Calculate Watershed Storage and River Discharge, S and Qpred, playing with the reservoir coefficient to try to get Qpred to best match Qmm
+
+TMWB$Qpred=NA
+TMWB$Qpred[1]=0
+TMWB$S=NA
+TMWB$S[1]=0
+attach(TMWB)
+fcres=.3
+for (t in 2:length(date)){
+  S[t]=S[t-1]+Excess[t]     
+  Qpred[t]=fcres*S[t]
+  S[t]=S[t]-Qpred[t]
+}
+TMWB$S=S
+TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+
+#Make a plot that has Qmm, P,and Qpred over time
+plot(date,P,col="black")
+lines(date,Qmm,type = "l",col="black")
+lines(date,Qpred,col="blue")
+detach(TMWB) # IMPORTANT TO DETACH
+rm(list=c("Qpred","S"))
+
+return(TMWB)
+}
+
+
+
+# 
+>>>>>>> 0fb9c9e870b8dd62e64c9542337082e2ff136bd4
+#CNModel
+#
+CNmodeldf = BasinData
+CNavg = 75
+IaFrac = 0.05
+fnc_slope=0 
+fnc_aspect=0
+func_DAWC=.3
+func_z=1000
+fnc_fcres=.3
+
+# Energy Balance based Snow Accumulation 
+# and Melt model from the EcoHydRology package.
+attach(CNmodeldf)
+SNO_Energy=SnowMelt(date, P, MaxTemp-3, MinTemp-3, myflowgage$declat, 
+                    slope = fnc_slope, aspect = fnc_aspect, tempHt = 1, 
+                    windHt = 2, groundAlbedo = 0.25,SurfEmissiv = 0.95, windSp = 2, 
+                    forest = 0, startingSnowDepth_m = 0,startingSnowDensity_kg_m3=450)
+# We will update the -3 in the above to be a lapse rate adjustment
+detach(CNmodeldf)
+CNmodeldf$SNO=SNO_Energy$SnowWaterEq_mm
+CNmodeldf$SNOmlt=SNO_Energy$SnowMelt_mm
+CNmodeldf$SnowfallWatEq_mm=SNO_Energy$SnowfallWatEq_mm
+CNmodeldf$SnowMelt_mm=SNO_Energy$SnowMelt_mm
+attach(CNmodeldf)
+CNmodeldf$Albedo=.23
+CNmodeldf$Albedo[CNmodeldf$SNO>0]=.95
+PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),
+                 Tmax_C = MaxTemp,Tmin_C = MinTemp,
+                 lat_radians = myflowgage$declat*pi/180) * 1000
+CNmodeldf$PET=PET
+detach(CNmodeldf)
+rm(list="PET")
+
+CNmodeldf$AWC=func_DAWC*func_z
+# Oh, this we want to vary some of these around our watershed!
+CNmodeldf$dP = 0 # Initializing Net Precipitation
+CNmodeldf$ET = 0 # Initializing ET
+CNmodeldf$AW = 0 # Initializing AW
+CNmodeldf$Excess = 0 # Initializing Excess
+CNmodeldf$S =0 # Initializing S
+CNmodeldf$Qpred=0 # Initializing Qpred
+attach(CNmodeldf)
+SSCNavg=(1000/CNavg-10)*25.4
+SSCN=SoilStorage(S_avg=SSCNavg, field_capacity=func_DAWC*.9,
+                 soil_water_content=0.1*func_DAWC, porosity=func_DAWC)
+Ia_init=IaFrac*SSCN   
+CNmodeldf$CNavg = CNavg
+CNmodeldf$SSCNavg = SSCNavg
+CNmodeldf$SSCN = SSCN
+detach(CNmodeldf)
+rm(list=c("CNavg", "SSCN", "SSCNavg"))
+CNmodeldf$Ia = Ia_init
+attach(CNmodeldf)
+# Those processes that are dependant on prior days conditions, we run as a 
+# loop through each of the days.
+for (t in 2:length(AW)){
+  ET[t] = AW[t-1]/AWC[t-1]*PET[t]
+  # Calculating Net Precipitation which adds in slope above's Excess
+  dP[t] = SNO_Energy$Rain_mm[t] - ET[t] + 
+    SNO_Energy$SnowMelt_mm[t]    # CN Solution
+  # Is the soil saturated, and thus can't take more dP? 
+  if (AW[t-1] + dP[t]>=AWC[t]){
+    Excess[t]=AW[t-1] + dP[t] -AWC[t]
+    AW[t]=AWC[t]
+    # Otherwise, if dP is less than the initial abstraction? 
+    # https://en.wikipedia.org/wiki/Runoff_curve_number#Definition
+  } else if (dP[t]<=Ia[t]) {
+    Excess[t]=0.0
+    AW[t]=AW[t-1] + dP[t]
+  } else {
+    Excess[t]=(dP[t]-Ia[t])^2/(dP[t]-Ia[t]+SSCN[t])
+    AW[t]=AW[t-1] + dP[t] -Excess[t]
+  }
+  S[t]=S[t-1]+Excess[t]
+  Qpred[t]=fnc_fcres*S[t]
+  S[t]=S[t]-Qpred[t]
+}
+CNmodeldf$ET=ET
+CNmodeldf$dP=dP
+CNmodeldf$AW=AW
+CNmodeldf$Excess=Excess
+CNmodeldf$S=S
+CNmodeldf$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+rm(list=c("AW", "dP", "ET", "Excess", "Qpred", "S"))
+detach(CNmodeldf)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a

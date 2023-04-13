@@ -6,13 +6,14 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
                rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
-LabNo="/Lab04"
+LabNo="/Lab10"
 #
 # Getting our organization on for where we want to put
 # Data, external programs, and our project files.
-# Things are going to get messy if we don't start issolating
+# Things are going to get messy if we don't start isolating
 # our data files by Lab
 #
+user=Sys.getenv("USER")
 myhomedir=Sys.getenv("HOME")
 datadir=paste0(myhomedir,"/data",LabNo)
 dir.create(datadir,recursive = T)
@@ -30,31 +31,25 @@ mypdfdir=paste0(mygitdir,"/pdfs",LabNo)
 dir.create(mypdfdir)
 # 
 setwd(mygitdir)
-<<<<<<< HEAD
-system("git config --global user.email 'binyam@vt.edu' ") 
-system("git config --global user.name 'saizanaandezana' ")
-=======
-system("git config --global user.email 'drfuka@vt.edu' ") 
+system(paste0("git config --global user.email '",user,"@vt.edu'")) 
 system("git config --global user.name 'Daniel Fuka' ")
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 system("git config pull.rebase false")
 #
 # This week, we discovered some "features" that make removing and 
 # re-installing the EcoHydrology Library necessary.
 #
 setwd(srcdir)
-detach("package:EcoHydRology", unload = TRUE)
-remove.packages("EcoHydRology", lib="~/R/x86_64-pc-linux-gnu-library/4.2")
-system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); 
-install.packages(c("ecohydrology/pkg/EcoHydRology/"),repos = NULL)
-pacman::p_load(EcoHydRology)
 
+#detach("package:EcoHydRology", unload = TRUE)
+#remove.packages("EcoHydRology", lib="~/R/x86_64-pc-linux-gnu-library/4.2")
+#system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); 
+#install.packages(c("ecohydrology/pkg/EcoHydRology/"),repos = NULL)
+pacman::p_load(EcoHydRology)
 setwd(datadir)
 #
 # Should we do a gage that is easy, or deal with some reality?
 #
 myflowgage_id="0205551460"  # Old Friendly Gage
-myflowgage_id="14216500"    # Most Frustrating Gage... lets do it!
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                          end_date = "2022-03-01")
 
@@ -116,7 +111,7 @@ bboxpts
 bboxpts=SpatialPoints(bboxpts,proj4string = crs_utm)
 # From Lab04, get your DEM
 mydem=get_aws_terrain(locations=bboxpts@coords, 
-                      z = 10, prj = proj4_utm,src ="aws",expand=1)
+                      z = 12, prj = proj4_utm,src ="aws",expand=1)
 res(mydem)
 plot(mydem)
 plot(bboxpts,add=T)
@@ -249,10 +244,6 @@ ssa=raster("mydemssa.tif")
 plot(ssa) 
 
 # Threshold
-<<<<<<< HEAD
-
-=======
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 syscmd=paste0("mpiexec -n 2 threshold -ssa mydemssa.tif -src mydemsrc1.tif -thresh ",subthreshold)
 system(syscmd)
 src1=raster("mydemsrc1.tif")
@@ -283,11 +274,6 @@ mydemw=rast("mydemw.tif")
 mydemw_poly=as.polygons(mydemw,na.rm=T)
 plot(mydemw_poly,add=T,col=rainbow(6))
 
-<<<<<<< HEAD
-#writeVector(mydemw_poly,dsn=".",layer="mydemw",driver="ESRI Shapefile", overwrite_layer=TRUE)
-=======
-writeVector(mydemw_poly,dsn=".",layer="mydemw",driver="ESRI Shapefile", overwrite_layer=TRUE)
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 writeVector(mydemw_poly, filename="mydemw.shp", filetype="ESRI Shapefile", layer="mydemw", insert=FALSE,
             overwrite=TRUE)
 
@@ -303,11 +289,6 @@ ssurgo.geom_utm=project(ssurgo.geom,crs_utm)
 plot(ssurgo.geom_utm,col=rainbow(length(ssurgo.geom_utm)))
 plot(mydemw_poly,add=T)
 ssurgo.geom_utm_crop=crop(ssurgo.geom_utm,mydemw_poly)
-<<<<<<< HEAD
-
-=======
-zip("mydemw.zip",list.files(pattern="mydemw[:.:]"))
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 plot(ssurgo.geom_utm_crop,col=rainbow(length(ssurgo.geom_utm)))
 plot(mydemw_poly,add=T)
 #
@@ -324,7 +305,7 @@ summary(mu2co)
 
 # Second associate cokey with ksat_r,awc_r,hzdepb_r from chorizon
 cokey_statement = format_SQL_in_statement(unique(mu2co$cokey))
-q_co2ch = paste("SELECT cokey,ksat_r,awc_r,hzdepb_r  FROM chorizon WHERE cokey IN ", cokey_statement, sep="")
+q_co2ch = paste("SELECT cokey,ksat_r,awc_r,hzdepb_r,frag3to10_r FROM chorizon WHERE cokey IN ", cokey_statement, sep="")
 print(q_co2ch)
 co2ch = SDA_query(q_co2ch)
 # Last, bring them back together, and aggregate based on max values
@@ -346,8 +327,6 @@ plot(mydemw_poly,main="Subbasins",col=rainbow(length(mydemw_poly)))
 soilmap$ksat_r[is.na(soilmap$ksat_r)]=mean(soilmap$ksat_r,na.rm=T)
 soilmap$awc_r[is.na(soilmap$awc_r)]=mean(soilmap$awc_r,na.rm=T)
 soilmap$hzdepb_r[is.na(soilmap$hzdepb_r)]=mean(soilmap$hzdepb_r,na.rm=T)
-
-
 
 par(mfrow=c(1,1))
 # Lab 04 TI 
@@ -382,35 +361,13 @@ TIC_terra=rast(TIC)
 plot(TIC_terra)
 
 
-# Lab 04 Calibration
-# Building more complex functions
-# 
-<<<<<<< HEAD
-
-TMWB=BasinData
- #
-=======
-# DRF Try this 0115150
 
 TMWB=BasinData
 #
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 # Our model will
 # 1) Calculate PET for the basin via Function
 # 2) Calculate the Snow Accumulation and Melt via Function
 # 3) Run TMWB via Function 
-<<<<<<< HEAD
-#
-#
-# Lets make one out of our Temperature Index Snow Model
-#
-source("https://raw.githubusercontent.com/saizanaandezana/BSE5304Labs/main/R/TMWBFuncs.R")
-
-source("https://raw.githubusercontent.com/saizanaandezana/BSE5304Labs/main/R/TISnow.R")
-
-
-SNO_df=TISnow(TMWB,SFTmp=2,bmlt6,bmlt12, Tmlt, Tlag)
-=======
 
 source("https://raw.githubusercontent.com/vtdrfuka/BSE5304Labs/main/R/TMWBFuncs.R")
 source("https://raw.githubusercontent.com/vtdrfuka/BSE5304Labs/main/R/TISnow.R")
@@ -419,175 +376,26 @@ source("https://raw.githubusercontent.com/vtdrfuka/BSE5304Labs/main/R/TISnow.R")
 #
 
 SNO_df=TISnow(TMWB,SFTmp = 2,bmlt6 = 3,bmlt12 = 0,Tmlt = 3,Tlag = 1)
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 TMWB$SNO=SNO_df$SNO
 TMWB$SNOmlt=SNO_df$SNOmlt
 TMWB$SNOfall=SNO_df$SNOfall
 TMWB$Tsno=SNO_df$Tsno
-detach(TMWB)
 #
 # Our PET Model we will borrow from EcoHydrology
-<<<<<<< HEAD
-
-TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(TMWB$date)$yday),Tmax_C = TMWB$MaxTemp,Tmin_C = TMWB$MinTemp,
-                      lat_radians = myflowgage$declat*pi/180) * 1000
-plot(TMWB$date,TMWB$PET)
-
-
-# Our TMWB Model
-
-TMWBModel= function(TMWBdf,fcres=.3,FldCap=.45,WiltPt=.15,Z=1000){
-  
-# TMWBdf$dP = TMWBdf$P-TMWBdf$ET -TMWBdf$SNO + TMWBdf$SNOmlt 
-# TMWBdf$ET = TMWBdf$PET # in mm/day
-# TMWBdf$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
-# TMWBdf$AW=NA  #Assigns all values in column with “NA” (Not available)
-# TMWBdf$AW[1]=250
-# TMWBdf$Excess=NA
-# TMWBdf$Excess[1]=0
-# head(TMWBdf)
-# 
-# # Here we go looping through our functions….
-# 
-# attach(TMWBdf)
-# for (t in 2:length(date)){
-#   if (dP[t]< 0) {  
-#     values<-soildrying(AW[t-1],dP[t],AWC[t])
-#   } else if (AW[t-1]+dP[t]>AWC[t]) {
-#     values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
-#   } else {
-#     values<-soilwetting (AW[t-1],dP[t],AWC[t])
-#   }
-#   AW[t]<-values[1]
-#   Excess[t]<-values[2]
-# }
-# 
-# detach(TMWBdf)
-# TMWBdf$AW <-AW
-# TMWBdf$Excess<-Excess
-# rm(list=c("AW","Excess"))
-# 
-# # Calculate Watershed Storage and River Discharge: 
-# TMWBdf$Qpred=NA
-# TMWBdf$Qpred[1]=0
-# TMWBdf$S=NA
-# TMWBdf$S[1]=0
-# 
-# attach(TMWBdf)
-# fcres=.3   # reservoir coefficient
-# for (t in 2:length(date)){
-#   S[t]=S[t-1]+Excess[t]     
-#   Qpred[t]=fcres*S[t]
-#   S[t]=S[t]-Qpred[t]
-# }
-# detach(TMWBdf) # IMPORTANT TO DETACH
-# TMWBdf$S=S
-# TMWBdf$Qpred=Qpred # UPDATE vector BEFORE DETACHING
-# rm(list=c("S","Qpred"))
-# View(TMWBdf)
-# dev.off()
-# plot(TMWBdf$date,TMWBdf$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
-# lines(TMWBdf$date,TMWBdf$Qpred,col="blue",type="l", 
-#       xlab = "", ylab = "")
-# legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
-#        lty = 1:2, cex = 0.8)
-
-myflowgage$FldCap=.45
-myflowgage$WiltPt=.15
-myflowgage$Z=1000
-TMWBdf$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
-TMWBdf$dP = 0 # Initializing Net Precipitation
-TMWBdf$ET = 0 # Initializing ET
-TMWBdf$AW = 0 # Initializing AW
-TMWBdf$Excess = 0 # Initializing Excess
-
-
-# Loop to calculate AW and Excess
-attach(TMWBdf)
-for (t in 2:length(AW)){
-  # This is where Net Precipitation is now calculated
-  # Do you remember what Net Precip is? Refer to week 2 notes
-  # Update this to reflect the ET model described above
-  
-  ET[t] = (AW[t-1]/AWC[t-1])*PET[t] # New Model
-  dP[t] = P[t] - ET[t] + SNOmlt[t] - SNOfall[t] 
-  # From here onward, everything is the same as Week2’s lab
-  if (dP[t]<=0) {
-    values<-soildrying(AW[t-1],dP[t],AWC[t])
-  } else if((dP[t]>0) & (AW[t-1]+dP[t])<=AWC[t]) {
-    values<-soilwetting(AW[t-1],dP[t],AWC[t])
-  } else {
-    values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
-  }
-  AW[t]<-values[1]
-  Excess[t]<-values[2]
-  print(t)
-}
-TMWBdf$AW=AW
-TMWBdf$Excess=Excess
-TMWBdf$dP=dP
-TMWBdf$ET=ET
-rm(list=c("AW","dP","ET", "Excess"))
-detach(TMWBdf) # IMPORTANT TO DETACH
-
-# Calculate Watershed Storage and River Discharge, S and Qpred, playing with the reservoir coefficient to try to get Qpred to best match Qmm
-
-TMWBdf$Qpred=NA
-TMWBdf$Qpred[1]=0
-TMWBdf$S=NA
-TMWBdf$S[1]=0
-attach(TMWBdf)
-fcres=.3
-for (t in 2:length(date)){
-  S[t]=S[t-1]+Excess[t]     
-  Qpred[t]=fcres*S[t]
-  S[t]=S[t]-Qpred[t]
-}
-TMWBdf$S=S
-TMWBdf$Qpred=Qpred # UPDATE vector BEFORE DETACHING
-detach(TMWBdf) # IMPORTANT TO DETACH
-rm(list=c("Qpred","S"))
-return(TMWBdf)
-}
-
-
-junkmodel = TMWBModel(TMWB)
-
-
-
-
-
-
-
-
-
-#Make a plot that has Qmm, P,and Qpred over time
-plot(TMWB$date,P,col="black")
-lines(date,Qmm,type = "l",col="black")
-lines(date,Qpred,col="blue")
-
-=======
 #
-detach(TMWB)
-#attach(TMWB)
 
 TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(TMWB$date)$yday),
                       Tmax_C = TMWB$MaxTemp,Tmin_C = TMWB$MinTemp,
                       lat_radians = myflowgage$declat*pi/180) * 1000
 plot(TMWB$date,TMWB$PET)
 
-junkout=TMWBmodel(TMWB)
 TMWBnew=TMWBmodel(TMWB)
 
-NSE(TMWB$Qmm,TMWB$Qpred)
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
 #
 # Functionalizing big big big time
 # Here is a great place to make this into a function!
 # return(TMWB)
 
-<<<<<<< HEAD
-=======
 
 BasinTMWB_JO=TMWBnew[(month(TMWBnew$date) > 5 
                       & month(TMWBnew$date) < 11),]
@@ -595,31 +403,7 @@ attach(BasinTMWB_JO)
 plot(dP,Qmm)
 detach(BasinTMWB_JO)
 
-(1000/85-10)*25.4   # our CN estimate in bold
-#[1] 44.82353
-(1000/50-10)*25.4   # our CN estimate in bold
-#[1] 254
-#
-# So we are going to visually "guestimate" that S should be somewhere between 
-# 45mm and 260mm… repeat plotting until your solution covers the 
-# largest Qmm vs dP event (upper right hand corner of plot). 
-# 
 
-# Assuming that (P-Ia) ~ dP, we can visually compare 
-attach(BasinTMWB_JO)
-plot(dP,Qmm)
-points(dP,dP^2/(dP+45),col="red")  # S guestimates in bold
-points(dP,dP^2/(dP+260),col="blue")# S guestimates in bold
-
-# Now perform a “Calibration” using our method from Lab3 and the NSE
-# as the “Objective Function”.  
-#
-# Vary S to maximize NSE using Eq. 4 of Lyon 2004 as our predictor of Q
-#   Qpred=dP^2/(dP+S)
-#
-NSE(Qmm,dP^2/(dP+260))
-NSE(Qmm,dP^2/(dP+45))
-#
 # Keep iterating until NSE is as high as you can get for your 
 # best estimate to S (Sest)
 #
@@ -627,24 +411,132 @@ f <- function (x) {
   Sest=x
   return(NSE(Qmm,dP^2/(dP+Sest)))
 }
-optimize(f, c(50,500), tol = 0.0001,maximum = TRUE)$maximum
-Sest="WHAT?"
+attach(BasinTMWB_JO)
+Sest=optimize(f, c(50,500), tol = 0.0001,maximum = TRUE)$maximum
 plot(dP,Qmm)
 points(dP,dP^2/(dP+Sest),col="red") 
 ########
 detach(BasinTMWB_JO)
-(1000/85-10)*25.4   # our CN estimate in bold
-                                                                                                    #[1] 44.82353
-                                                                                                #[1] 254
-                                                                                                    #
-                                                                                                    # So we are going to visually "guestimate" that S should be somewhere between 
-                                                                                                    # 45mm and 260mm… repeat plotting until your solution covers the 
-                                                                                                    # largest Qmm vs dP event (upper right hand corner of plot). 
-                                                                                                    # 
-                                                                                                    
-                                                                                                    # Assuming that (P-Ia) ~ dP, we can visually compare 
-                                                                                                    attach(BasinTMWB_JO)
-                                                                                                    plot(dP,Qmm)
-                                                                                                    points(dP,dP^2/(dP+45),col="red")  # S guestimates in bold
-                                                                                                    points(dP,dP^2/(dP+260),col="blue")# S guestimates in bold
->>>>>>> 9877d67637f280c591538159d409b20164a9e61a
+CN2 = (1000/85-10)*25.4   # our CN estimate in bold
+
+mysoil_utm <- as(ssurgo.geom_utm_crop, "Spatial")
+# Rasterizing for categorical analysis! 
+rmysoil_utm=rasterize(mysoil_utm,TIC,field=as.numeric(mysoil_utm$mukey))
+unique(rmysoil_utm)
+pacman::p_load(circlize)
+plot(rmysoil_utm,col=rand_color(length(unique(values(rmysoil_utm)))))
+unique(rmysoil_utm)
+#
+
+
+mybasinslp=mask(crop(slp,rmysoil_utm),rmysoil_utm)
+
+#
+# Now build an HRU table with the combination of the 1) raster Soils, 2) TIC,
+# and 3) slope layers. 
+#
+hru=ratify(TIC*10^9 + (rmysoil_utm*10^3) + round(mybasinslp*10+1))
+unique(values(hru))
+sort(unique(values(hru)))
+length(unique(values(hru)))
+plot(hru,col=rand_color(length(unique(values(hru)))))
+# Think of how you will color this plot based on the sediment runoff you will
+# calculate later.
+#
+# Build an HRU attribute table
+hru_table = levels(hru)[[1]]
+origID = hru_table$ID # preserve data order for later reordering
+# metadata parameters from a string... this will make more sense
+# after the next "head()" command
+hru_table$TIclass = as.numeric(substr(sprintf("%10.0f", hru_table$ID), 1,1))
+hru_table$mukey = as.numeric(substr(sprintf("%10.0f", hru_table$ID), 2,7))
+hru_table$slp = (as.numeric(substr(sprintf("%10.0f", 
+                                             hru_table$ID), 8,10))-1)/10
+#
+# Calculate the area for each unique soil (mukey) X TIClass combination
+# using res(raster) for x and y resolution in units of m
+# Note that table() function returns the count of the occurrences of
+# unique values in the hru raster cells.
+hru_table$areaSQKM = as.vector(round(res(hru)[1]*res(hru)[2]*
+                                         table(values(hru))/10^6, 3))
+
+View(mu2co)
+View(co2ch)
+
+cokey_statement = format_SQL_in_statement(unique(mu2co$cokey))
+q_co2co = paste("SELECT cokey,slopelenusle_r FROM component WHERE cokey IN ", cokey_statement, sep="")
+co2co=SDA_query(q_co2co)
+# Last, bring them back together, and aggregate based on max values
+# of ksat_r,awc_r, and hzdepb_r
+mu2ch=merge(mu2co,co2ch)
+mu2ch=merge(mu2ch,co2co)
+View(mu2ch)
+
+MUSLE_mrg=merge(hru_table,mu2ch)   
+MUSLE_mrg$ksat_r=as.numeric(MUSLE_mrg$ksat_r)
+MUSLE_mrg$awc_r=as.numeric(MUSLE_mrg$awc_r)
+MUSLE_mrg$hzdepb_r=as.numeric(MUSLE_mrg$hzdepb_r)
+MUSLE_mrg$slopelenusle_r=as.numeric(MUSLE_mrg$slopelenusle_r)
+MUSLE_mrg$frag3to10_r=as.numeric(MUSLE_mrg$frag3to10_r)
+MUSLE=aggregate(MUSLE_mrg,list(MUSLE_mrg$ID),mean,na.rm=T)
+
+MUSLE=aggregate(MUSLE_mrg,list(MUSLE_mrg$TIclass),mean,na.rm=T)
+#
+# Easiest first! Eq. 4:1.1.15 Course Fragment Factor
+MUSLE$CFRG=exp(-0.053*MUSLE$frag3to10_r)
+MUSLE
+#
+# LSusle is calculated using eq. 4.1.12
+MUSLE$alpha=atan(MUSLE$slp/100)
+MUSLE$LSm=.6*(1-exp(-35.835*MUSLE$slp/100))
+MUSLE$LS=(MUSLE$slopelenusle_r/22.1)^MUSLE$LSm * (65.41*sin(MUSLE$alpha)^2+4.56*sin(MUSLE$alpha)+0.065)
+#
+# Pusle
+MUSLE$Pusle=.50
+#
+# Cusle
+MUSLE$Cusle=.20
+#
+# Kusle
+MUSLE$Kusle=0.28
+#
+# Build a constant for those we are not changing day to day
+attach(MUSLE)
+MUSLE$KCPLSCFRG118=11.8*Kusle*Cusle*Pusle*LS*CFRG
+detach(MUSLE)
+MUSLE # Make sure values look correct, Pusle, Cusle, Kusle
+#
+# Now we need to use each of the TIClass Q solutions from Lab06 to calculate
+# peak flows (qpeak) and complete the MUSLE Sediment Loss for each class.
+# Run Model
+#
+# Now we need to use Q solutions from Lab06 to calculate
+# peak flows (qpeak) and complete the MUSLE Sediment Loss for each class.
+# Run Model
+#source CNmodel function
+Sest
+
+source("https://raw.githubusercontent.com/vtdrfuka/BSE5304_2022/main/functions/CNmodel")
+pacman::p_load(data.table)
+# We will split into 5 VSA areas represented by 5 TI Classes
+nTIclass=5
+VSAsol=data.table(TIClass=seq(from=nTIclass,to=1),
+                    As=seq(1:nTIclass)*(1/nTIclass),Wetfrac=(1/nTIclass))
+VSAsol[,sSratio:=2*(sqrt(1-shift(As))-sqrt(1-As))/Wetfrac-1]
+#
+VSAsol$sSratio[1]=2*(sqrt(1-0)-sqrt(1-VSAsol$As[1]))/VSAsol$Wetfrac[1]-1
+# Calculate TI Class localized sigma and Curve Number
+VSAsol[,sigma:=Sest*sSratio]
+VSAsol[,CN:=25400/(sigma+254)]
+VSAsol
+
+VSAParams=merge(VSAsol,MUSLE,by.x="TIClass",by.y="TIclass")
+View(VSAParams)
+
+TIC01=TMWB
+
+# For TIC01 CNavg=VSAParams$CN[1] but confirm
+TIC01 = CNmodel(CNmodeldf = TIC01, CNavg=VSAParams$CN[1], 
+                  declat=myflowgage$declat,declon=myflowgage$declon)
+TIC01$qpeak=TIC01$Qpred/3600/24/1000*myflowgage$area/nTIclass*10^6 #m^3/sec
+TIC01$sed=(TIC01$Qpred*TIC01$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[1]    # Eq. 4:1.1.1 SWAT Theory

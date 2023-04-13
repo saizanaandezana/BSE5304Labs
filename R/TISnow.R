@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   # WBData = TMWB
   # SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
@@ -5,6 +6,21 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   # bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
   # Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
   # Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
+=======
+#SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
+#bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
+#bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
+#Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
+#Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
+
+TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
+#WBData=TMWB
+#SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
+#bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
+#bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
+#Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
+#Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
   WBData$AvgTemp=(WBData$MaxTemp-WBData$MinTemp)/2
   WBData$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 * 
     sin(2*pi/365*(julian(WBData$date,origin = as.Date("2000-01-01"))-81))
@@ -15,7 +31,11 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   WBData$SNOfall = 0  # Snow Fall (mm)
   attach(WBData)
   for (t in 2:length(date)){
+<<<<<<< HEAD
     
+=======
+    SNOmlt[t]=0
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
     Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
     if(AvgTemp[t] < SFTmp){
       SNO[t]= SNO[t-1] + P[t]
@@ -26,9 +46,14 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
     }  else {
       SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 
       SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
+<<<<<<< HEAD
       SNO[t]= SNO[t-1] - SNOmlt[t]
     }
     print(t)
+=======
+      SNO[t]= SNO[t-1] -SNOmlt[t]
+    }
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
   }
   plot(date,SNO,type="l")
   detach(WBData)
@@ -36,6 +61,12 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   WBData$SNO=SNO
   WBData$SNOmlt=SNOmlt
   WBData$SNOfall=SNOfall
+<<<<<<< HEAD
   rm(list=c("SNO", "SNOmlt", "Tsno", "SNOfall"))
   return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
 }
+=======
+  rm(list=c("SNO", "SNOmlt", "Tsno","SNOfall"))
+  return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
+}
+>>>>>>> 9877d67637f280c591538159d409b20164a9e61a
